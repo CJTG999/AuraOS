@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkPad v2</title>
+    <!-- Optional CDN for robust Markdown rendering; built-in fallback parser provided -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* --- CUSTOM CURSOR FIX --- */
+        html, body {
+            cursor: url('https://codehs.com/uploads/471381c796bfff3712cd05b64b44142a'), auto !important;
+            min-height: 100vh;
+        }
+
+        a, 
+        button, 
+        input, 
+        select, 
+        textarea, 
+        .cursor-pointer, 
+        .fmt-btn,
+        #keystroke-tester-container div,
+        [role="button"] {
+            cursor: url('https://codehs.com/uploads/83f80767e459872bcd2a56d8cc903e59'), pointer !important;
+        }
+
+        #gameModal, .bg-gray-900-transparent {
+            cursor: url('https://codehs.com/uploads/471381c796bfff3712cd05b64b44142a'), auto !important;
+        }
+
+        /* --- 1. THEME & BASIC SETUP --- */
+        :root {
+            --bg-color: #1e1e1e;
+            --toolbar-bg: #2d2d2d;
+            --sub-toolbar-bg: #252526;
+            --text-color: #d4d4d4;
+            --accent-color: #007acc;
+            --hover-color: #005f9e;
+            --modal-bg: #252526;
+            --border-color: #3e3e42;
+            --preview-bg: #1e1e1e;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- 2. TOOLBARS --- */
+        .toolbar {
+            background-color: var(--toolbar-bg);
+            padding: 10px 20px;
+            display: flex;
+            gap: 10px;
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            margin-right: auto;
+            color: #fff;
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            background-color: var(--accent-color);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        button, .file-upload {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        button:hover, .file-upload:hover {
+            background-color: var(--hover-color);
+        }
+
+        .btn-secondary {
+            background-color: #3c3c3c;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #4a4a4a;
+        }
+
+        #fileInput { display: none; }
+
+        /* --- FORMATTING TOOLBAR --- */
+        .format-toolbar {
+            background-color: var(--sub-toolbar-bg);
+            padding: 6px 20px;
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .fmt-btn {
+            background-color: #333333;
+            color: #d4d4d4;
+            border: 1px solid #444444;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.15s ease;
+            min-width: 32px;
+            height: 30px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fmt-btn:hover {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 20px;
+            background-color: var(--border-color);
+            margin: 0 4px;
+        }
+
+        .view-toggle-group {
+            margin-left: auto;
+            display: flex;
+            gap: 2px;
+            background: #1e1e1e;
+            padding: 2px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .view-btn {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            padding: 3px 10px;
+            font-size: 0.8rem;
+            border-radius: 3px;
+        }
+
+        .view-btn.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        /* --- 3. EDITOR & PREVIEW LAYOUT --- */
+        .main-container {
+            flex-grow: 1;
+            display: flex;
+            width: 100%;
+            height: calc(100vh - 90px);
+            overflow: hidden;
+        }
+
+        #editor {
+            flex: 1;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: none;
+            resize: none;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            outline: none;
+            box-sizing: border-box;
+            height: 100%;
+        }
+
+        #preview {
+            flex: 1;
+            background-color: var(--preview-bg);
+            color: var(--text-color);
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 1px solid var(--border-color);
+            box-sizing: border-box;
+            display: none; /* Default to edit mode */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+
+        /* Markdown rendered preview styling */
+        #preview h1, #preview h2, #preview h3, #preview h4 {
+            color: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+            margin-top: 18px;
+            margin-bottom: 10px;
+        }
+
+        #preview code {
+            background-color: #2d2d2d;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            color: #ce9178;
+        }
+
+        #preview pre {
+            background-color: #2d2d2d;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        #preview pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #d4d4d4;
+        }
+
+        #preview blockquote {
+            border-left: 4px solid var(--accent-color);
+            margin: 0;
+            padding-left: 15px;
+            color: #aaa;
+        }
+
+        #preview a {
+            color: #3794ff;
+            text-decoration: none;
+        }
+
+        #preview a:hover {
+            text-decoration: underline;
+        }
+
+        #preview table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        #preview th, #preview td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        #preview th {
+            background-color: #2d2d2d;
+        }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: #444; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* --- 4. POPUP MODAL STYLING --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 100;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-box {
+            background: var(--modal-bg);
+            padding: 20px;
+            border-radius: 8px;
+            width: 360px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .input-group {
+            display: flex;
+            width: 100%;
+        }
+
+        input[type="text"] {
+            background: #3c3c3c;
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            outline: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .btn-cancel { background-color: #444; }
+        .btn-cancel:hover { background-color: #555; }
+    </style>
+</head>
+<body>
+
+    <!-- TOP TOOLBAR -->
+    <div class="toolbar">
+        <h1>DarkPad V2</h1>
+        <label for="fileInput" class="file-upload">📂 Open</label>
+        <input type="file" id="fileInput" accept=".txt,.md,.markdown,.js,.html,.css,.json,.lrc,.srt">
+        <button class="btn-secondary" onclick="exportMarkdownFile()">📥 Export .md</button>
+        <button onclick="openSaveModal()">💾 Save As...</button>
+    </div>
+
+    <!-- GOOGLE DOCS STYLE MARKDOWN FORMATTING TOOLBAR -->
+    <div class="format-toolbar">
+        <button class="fmt-btn" onclick="insertMarkdown('**', '**', 'bold text')" title="Bold (Ctrl+B)"><b>B</b></button>
+        <button class="fmt-btn" onclick="insertMarkdown('*', '*', 'italic text')" title="Italic (Ctrl+I)"><i>I</i></button>
+        <button class="fmt-btn" onclick="insertMarkdown('~~', '~~', 'strikethrough text')" title="Strikethrough (Ctrl+Shift+X)"><s>S</s></button>
+        
+        <div class="toolbar-divider"></div>
+        
+        <button class="fmt-btn" onclick="insertPrefix('# ')" title="Heading 1">H1</button>
+        <button class="fmt-btn" onclick="insertPrefix('## ')" title="Heading 2">H2</button>
+        <button class="fmt-btn" onclick="insertPrefix('### ')" title="Heading 3">H3</button>
+
+        <div class="toolbar-divider"></div>
+
+        <button class="fmt-btn" onclick="insertPrefix('- ')" title="Bullet List">• List</button>
+        <button class="fmt-btn" onclick="insertPrefix('1. ')" title="Numbered List">1. List</button>
+        <button class="fmt-btn" onclick="insertPrefix('> ')" title="Blockquote">" Quote</button>
+        <button class="fmt-btn" onclick="insertCodeBlock()" title="Code Block">&lt;/&gt;</button>
+        <button class="fmt-btn" onclick="insertLink()" title="Hyperlink (Ctrl+K)">🔗 Link</button>
+        <button class="fmt-btn" onclick="insertMarkdown('\n---\n', '', '')" title="Horizontal Rule">― Divider</button>
+
+        <!-- VIEW TOGGLE (EDIT / SPLIT / PREVIEW) -->
+        <div class="view-toggle-group">
+            <button class="view-btn active" id="btnEditView" onclick="setViewMode('edit')">Edit</button>
+            <button class="view-btn" id="btnSplitView" onclick="setViewMode('split')">Split</button>
+            <button class="view-btn" id="btnPreviewView" onclick="setViewMode('preview')">Preview</button>
+        </div>
+    </div>
+
+    <!-- MAIN EDITOR & PREVIEW WORKSPACE -->
+    <div class="main-container">
+        <textarea id="editor" placeholder="Start typing or formatting your Markdown document..."></textarea>
+        <div id="preview"></div>
+    </div>
+
+    <!-- SAVE MODAL -->
+    <div class="modal-overlay" id="saveModal">
+        <div class="modal-box">
+            <div class="modal-title">Save Document</div>
+            
+            <div class="input-group">
+                <input type="text" id="fileNameInput" placeholder="document.md">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeSaveModal()">Cancel</button>
+                <button onclick="confirmDownload()">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // References
+        const fileInput = document.getElementById('fileInput');
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const saveModal = document.getElementById('saveModal');
+        const fileNameInput = document.getElementById('fileNameInput');
+
+        let currentViewMode = 'edit';
+
+        // --- OPEN FILE LOGIC ---
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            fileNameInput.value = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) { 
+                editor.value = e.target.result;
+                updatePreview();
+            };
+            reader.readAsText(file);
+        });
+
+        // --- MARKDOWN FORMATTING HELPERS ---
+        function insertMarkdown(prefix, suffix = '', defaultText = '') {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const selectedText = editor.value.substring(start, end);
+            const textToInsert = selectedText || defaultText;
+            
+            const replacement = prefix + textToInsert + suffix;
+            
+            editor.value = editor.value.substring(0, start) + replacement + editor.value.substring(end);
+            
+            // Adjust selection range
+            if (!selectedText && defaultText) {
+                editor.setSelectionRange(start + prefix.length, start + prefix.length + defaultText.length);
+            } else {
+                editor.setSelectionRange(start + replacement.length, start + replacement.length);
+            }
+            
+            editor.focus();
+            updatePreview();
+        }
+
+        function insertPrefix(prefix) {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const val = editor.value;
+            
+            // Find start of current line
+            const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+            let lineEnd = val.indexOf('\n', end);
+            if (lineEnd === -1) lineEnd = val.length;
+            
+            const currentLine = val.substring(lineStart, lineEnd);
+            
+            let newLine;
+            if (currentLine.startsWith(prefix)) {
+                // Toggle off
+                newLine = currentLine.substring(prefix.length);
+            } else {
+                newLine = prefix + currentLine;
+            }
+            
+            editor.value = val.substring(0, lineStart) + newLine + val.substring(lineEnd);
+            editor.setSelectionRange(lineStart + newLine.length, lineStart + newLine.length);
+            editor.focus();
+            updatePreview();
+        }
+
+        function insertCodeBlock() {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const selectedText = editor.value.substring(start, end);
+
+            if (selectedText.includes('\n')) {
+                insertMarkdown('```\n', '\n```', selectedText);
+            } else {
+                insertMarkdown('`', '`', selectedText || 'code');
+            }
+        }
+
+        function insertLink() {
+            const url = prompt('Enter link URL:', 'https://');
+            if (url) {
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                const selectedText = editor.value.substring(start, end) || 'link text';
+                
+                const linkMd = `[${selectedText}](${url})`;
+                editor.value = editor.value.substring(0, start) + linkMd + editor.value.substring(end);
+                editor.focus();
+                updatePreview();
+            }
+        }
+
+        // Keyboard Shortcuts in Editor
+        editor.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'b' || e.key === 'B') {
+                    e.preventDefault();
+                    insertMarkdown('**', '**', 'bold text');
+                } else if (e.key === 'i' || e.key === 'I') {
+                    e.preventDefault();
+                    insertMarkdown('*', '*', 'italic text');
+                } else if (e.key === 'k' || e.key === 'K') {
+                    e.preventDefault();
+                    insertLink();
+                } else if (e.shiftKey && (e.key === 'X' || e.key === 'x')) {
+                    e.preventDefault();
+                    insertMarkdown('~~', '~~', 'strikethrough text');
+                }
+            }
+        });
+
+        // --- PREVIEW RENDERER ---
+        function updatePreview() {
+            const mdText = editor.value;
+            if (window.marked && typeof window.marked.parse === 'function') {
+                preview.innerHTML = window.marked.parse(mdText);
+            } else {
+                // Built-in fallback Markdown parser
+                preview.innerHTML = fallbackMarkdownParse(mdText);
+            }
+        }
+
+        function fallbackMarkdownParse(md) {
+            let html = md
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+
+            // Headings
+            html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+            // Bold, Italic, Strikethrough
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            html = html.replace(/~~(.*?)~~/g, '<del>$1</del>');
+
+            // Blockquotes & Lists
+            html = html.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
+            html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+
+            // Links & Code
+            html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Line breaks
+            return html.replace(/\n/g, '<br>');
+        }
+
+        editor.addEventListener('input', updatePreview);
+
+        // --- VIEW MODE CONTROLLER ---
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            document.getElementById('btnEditView').classList.toggle('active', mode === 'edit');
+            document.getElementById('btnSplitView').classList.toggle('active', mode === 'split');
+            document.getElementById('btnPreviewView').classList.toggle('active', mode === 'preview');
+
+            if (mode === 'edit') {
+                editor.style.display = 'block';
+                preview.style.display = 'none';
+            } else if (mode === 'split') {
+                editor.style.display = 'block';
+                preview.style.display = 'block';
+                updatePreview();
+            } else if (mode === 'preview') {
+                editor.style.display = 'none';
+                preview.style.display = 'block';
+                updatePreview();
+            }
+        }
+
+        // --- EXPORT AS .MD QUICK ACTION ---
+        function exportMarkdownFile() {
+            let filename = fileNameInput.value.trim();
+            if (!filename) {
+                filename = "document.md";
+            } else {
+                // Ensure .md extension
+                const dotIdx = filename.lastIndexOf('.');
+                if (dotIdx === -1) {
+                    filename += ".md";
+                } else {
+                    filename = filename.substring(0, dotIdx) + ".md";
+                }
+            }
+            downloadFile(editor.value, filename);
+        }
+
+        // --- MODAL & DOWNLOAD LOGIC ---
+        function openSaveModal() {
+            saveModal.classList.add('active');
+            
+            if (!fileNameInput.value) {
+                fileNameInput.value = "document.md";
+            } else if (!fileNameInput.value.endsWith('.md')) {
+                const nameWithoutExt = fileNameInput.value.split('.')[0] || "document";
+                fileNameInput.value = nameWithoutExt + ".md";
+            }
+            
+            fileNameInput.focus();
+            fileNameInput.select();
+        }
+
+        function closeSaveModal() {
+            saveModal.classList.remove('active');
+        }
+
+        saveModal.addEventListener('click', function(e) {
+            if (e.target === saveModal) closeSaveModal();
+        });
+
+        fileNameInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                confirmDownload();
+            }
+        });
+
+        function confirmDownload() {
+            let filename = fileNameInput.value.trim();
+            if (!filename) filename = "untitled.md";
+
+            if (filename.indexOf('.') === -1) {
+                filename += ".md";
+            }
+            
+            downloadFile(editor.value, filename);
+            closeSaveModal();
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+            const anchor = document.createElement('a');
+            anchor.href = URL.createObjectURL(blob);
+            anchor.download = filename;
+            
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Player Emulator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Ruffle Flash Emulator Script -->
+    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        /* Ensure player element occupies the container smoothly */
+        #player-container ruffle-player {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased overflow-x-hidden selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                    <i data-lucide="zap" class="w-6 h-6 text-slate-950 fill-current"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Ruffle Flash Player</h1>
+                    <p class="text-xs text-slate-400">SWF Emulator & Player</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Status Badge -->
+                <div id="status-badge" class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-300">
+                    <span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="status-text">Ready for file</span>
+                </div>
+
+                <!-- Load File Button -->
+                <label class="cursor-pointer px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-semibold text-sm transition flex items-center gap-2 shadow-lg shadow-amber-500/20">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <span>Open SWF</span>
+                    <input type="file" id="file-input" accept=".swf" class="hidden">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+
+        <!-- Stage Box -->
+        <div class="flex-1 flex flex-col rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden min-h-[480px]">
+            
+            <!-- Player Canvas Wrapper -->
+            <div id="drop-zone" class="relative flex-1 bg-slate-950 flex items-center justify-center min-h-[380px] group transition-colors">
+                
+                <!-- Placeholder / Drop prompt (shown when no SWF is loaded) -->
+                <div id="placeholder" class="flex flex-col items-center justify-center text-center p-8 max-w-md transition-all">
+                    <div class="w-20 h-20 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mb-4 text-slate-500 group-hover:scale-110 group-hover:border-amber-500/50 group-hover:text-amber-400 transition-all duration-300">
+                        <i data-lucide="file-up" class="w-10 h-10"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-slate-200 mb-2">Drop your .SWF file here</h2>
+                    <p class="text-sm text-slate-400 mb-6">Or use the button above to browse your computer for Flash animations, games, or movies.</p>
+                    <label class="cursor-pointer px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm font-medium transition flex items-center gap-2">
+                        <i data-lucide="folder-open" class="w-4 h-4 text-amber-400"></i>
+                        Select Local File
+                        <input type="file" id="drop-file-input" accept=".swf" class="hidden">
+                    </label>
+                </div>
+
+                <!-- Ruffle Container -->
+                <div id="player-container" class="w-full h-full absolute inset-0 hidden flex items-center justify-center"></div>
+
+                <!-- Error Toast Container -->
+                <div id="error-alert" class="hidden absolute top-4 left-4 right-4 sm:left-auto sm:right-4 max-w-md bg-rose-950/90 border border-rose-800 text-rose-200 px-4 py-3 rounded-xl shadow-xl backdrop-blur flex items-start gap-3 z-20">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-rose-400 shrink-0 mt-0.5"></i>
+                    <div class="flex-1 text-sm" id="error-message">Invalid file type provided.</div>
+                    <button onclick="hideError()" class="text-rose-400 hover:text-rose-200">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls Bar -->
+            <div class="p-4 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                
+                <!-- Left Playback controls -->
+                <div class="flex items-center gap-2">
+                    <button id="btn-play-pause" disabled title="Play / Pause" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition">
+                        <i data-lucide="pause" id="icon-play-pause" class="w-4 h-4"></i>
+                    </button>
+                    <button id="btn-reload" disabled title="Restart Animation" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    </button>
+                    <button id="btn-mute" disabled title="Toggle Audio" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition">
+                        <i data-lucide="volume-2" id="icon-mute" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Middle Settings (Scale & Quality) -->
+                <div class="flex items-center gap-3 text-sm">
+                    <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                        <label for="scale-select" class="text-xs font-medium text-slate-400 uppercase tracking-wider">Scale:</label>
+                        <select id="scale-select" disabled class="bg-transparent text-xs text-slate-200 font-medium focus:outline-none cursor-pointer disabled:cursor-not-allowed">
+                            <option value="showAll" class="bg-slate-900">Fit Stage (Show All)</option>
+                            <option value="exactFit" class="bg-slate-900">Stretch (Exact Fit)</option>
+                            <option value="noScale" class="bg-slate-900">Original Size (No Scale)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                        <label for="quality-select" class="text-xs font-medium text-slate-400 uppercase tracking-wider">Quality:</label>
+                        <select id="quality-select" disabled class="bg-transparent text-xs text-slate-200 font-medium focus:outline-none cursor-pointer disabled:cursor-not-allowed">
+                            <option value="high" class="bg-slate-900">High</option>
+                            <option value="medium" class="bg-slate-900">Medium</option>
+                            <option value="low" class="bg-slate-900">Low</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Right Utility controls -->
+                <div class="flex items-center gap-2">
+                    <button id="btn-fullscreen" disabled title="Toggle Fullscreen" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 transition">
+                        <i data-lucide="maximize" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Info / Details Box -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- File Info Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-3">
+                <div class="flex items-center gap-2 text-amber-400 font-semibold text-sm">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    Loaded File Meta
+                </div>
+                <div class="text-xs space-y-2 text-slate-400">
+                    <div class="flex justify-between border-b border-slate-800/60 pb-1.5">
+                        <span>File Name:</span>
+                        <span id="meta-name" class="font-medium text-slate-200 truncate max-w-[160px]">None</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-800/60 pb-1.5">
+                        <span>File Size:</span>
+                        <span id="meta-size" class="font-medium text-slate-200">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Status:</span>
+                        <span id="meta-status" class="font-medium text-amber-400">Waiting for upload</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features & Info -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col gap-3 md:col-span-2">
+                <div class="flex items-center gap-2 text-amber-400 font-semibold text-sm">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                    About Ruffle & Usage
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    <strong>Ruffle</strong> is an open-source Flash Player emulator built in Rust. It runs natively in modern browsers via WebAssembly without requiring the legacy Flash plugin.
+                </p>
+                <div class="text-xs text-slate-400 flex flex-wrap gap-x-6 gap-y-2 mt-1">
+                    <span class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Local SWF Support</span>
+                    <span class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i> ActionScript 1/2/3 Support</span>
+                    <span class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Safe & Sandbox Environment</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- App Logic Script -->
+    <script>
+        // State variables
+        let rufflePlayer = null;
+        let isPlaying = false;
+        let isMuted = false;
+        let currentFileData = null;
+        let currentFileName = "";
+
+        // DOM Element references
+        const dropZone = document.getElementById('drop-zone');
+        const placeholder = document.getElementById('placeholder');
+        const playerContainer = document.getElementById('player-container');
+        const fileInput = document.getElementById('file-input');
+        const dropFileInput = document.getElementById('drop-file-input');
+        
+        // Control buttons
+        const btnPlayPause = document.getElementById('btn-play-pause');
+        const btnReload = document.getElementById('btn-reload');
+        const btnMute = document.getElementById('btn-mute');
+        const btnFullscreen = document.getElementById('btn-fullscreen');
+        const iconPlayPause = document.getElementById('icon-play-pause');
+        const iconMute = document.getElementById('icon-mute');
+        const scaleSelect = document.getElementById('scale-select');
+        const qualitySelect = document.getElementById('quality-select');
+
+        // Status & Metadata elements
+        const statusBadge = document.getElementById('status-badge');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+        const metaName = document.getElementById('meta-name');
+        const metaSize = document.getElementById('meta-size');
+        const metaStatus = document.getElementById('meta-status');
+        const errorAlert = document.getElementById('error-alert');
+        const errorMessage = document.getElementById('error-message');
+
+        // Initialize Lucide Icons
+        window.onload = function() {
+            lucide.createIcons();
+        };
+
+        // File upload event handlers
+        fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+        dropFileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+
+        // Drag & Drop handlers
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-2', 'border-dashed', 'border-amber-500', 'bg-slate-900/80');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-2', 'border-dashed', 'border-amber-500', 'bg-slate-900/80');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-2', 'border-dashed', 'border-amber-500', 'bg-slate-900/80');
+            if (e.dataTransfer.files && e.target.files !== 0) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        // Function to process selected file
+        function handleFileSelect(file) {
+            if (!file) return;
+
+            hideError();
+
+            // Validate extension
+            if (!file.name.toLowerCase().endsWith('.swf')) {
+                showError("Invalid file extension. Please select a valid Flash (.swf) file.");
+                return;
+            }
+
+            currentFileName = file.name;
+            const reader = new FileReader();
+
+            updateStatus("Loading...", "amber");
+
+            reader.onload = function(e) {
+                currentFileData = e.target.result;
+                loadSwfIntoRuffle(currentFileData);
+                updateMetadata(file);
+            };
+
+            reader.onerror = function() {
+                showError("Failed to read the local file.");
+                updateStatus("Error", "rose");
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Embed SWF into Ruffle instance
+        function loadSwfIntoRuffle(arrayBuffer) {
+            // Clear existing player container
+            playerContainer.innerHTML = '';
+            
+            // Access Ruffle API
+            const ruffle = window.RufflePlayer ? window.RufflePlayer.newest() : null;
+
+            if (!ruffle) {
+                showError("Ruffle library failed to load. Please check your network connection.");
+                updateStatus("Engine Error", "rose");
+                return;
+            }
+
+            // Create new Ruffle player instance
+            rufflePlayer = ruffle.createPlayer();
+            playerContainer.appendChild(rufflePlayer);
+
+            // Configure scale mode
+            rufflePlayer.config = {
+                letterbox: "on",
+                scale: scaleSelect.value,
+                quality: qualitySelect.value,
+                autoplay: "on"
+            };
+
+            // Load binary data into Ruffle
+            try {
+                rufflePlayer.load({
+                    data: arrayBuffer,
+                    allowScriptAccess: true
+                }).then(() => {
+                    isPlaying = true;
+                    isMuted = false;
+                    enableControls(true);
+                    updatePlayPauseIcon();
+                    updateMuteIcon();
+                    updateStatus("Playing", "emerald");
+                }).catch((err) => {
+                    console.error("Ruffle load error:", err);
+                    showError("Could not execute Flash file with Ruffle.");
+                    updateStatus("Playback Error", "rose");
+                });
+            } catch (err) {
+                console.error("Load exception:", err);
+                showError("An unexpected error occurred during playback startup.");
+                updateStatus("Error", "rose");
+            }
+
+            // Reveal canvas container and hide drag placeholder
+            placeholder.classList.add('hidden');
+            playerContainer.classList.remove('hidden');
+        }
+
+        // Control actions
+        btnPlayPause.addEventListener('click', () => {
+            if (!rufflePlayer) return;
+            if (isPlaying) {
+                rufflePlayer.pause();
+                isPlaying = false;
+                updateStatus("Paused", "amber");
+            } else {
+                rufflePlayer.play();
+                isPlaying = true;
+                updateStatus("Playing", "emerald");
+            }
+            updatePlayPauseIcon();
+        });
+
+        btnReload.addEventListener('click', () => {
+            if (currentFileData) {
+                loadSwfIntoRuffle(currentFileData);
+            }
+        });
+
+        btnMute.addEventListener('click', () => {
+            if (!rufflePlayer) return;
+            isMuted = !isMuted;
+            rufflePlayer.volume = isMuted ? 0 : 1;
+            updateMuteIcon();
+        });
+
+        btnFullscreen.addEventListener('click', () => {
+            if (!rufflePlayer) return;
+            if (rufflePlayer.requestFullscreen) {
+                rufflePlayer.requestFullscreen();
+            } else if (rufflePlayer.webkitRequestFullscreen) {
+                rufflePlayer.webkitRequestFullscreen();
+            }
+        });
+
+        scaleSelect.addEventListener('change', () => {
+            if (rufflePlayer) {
+                rufflePlayer.config.scale = scaleSelect.value;
+                // Reload data to apply config gracefully if needed
+                if (currentFileData) loadSwfIntoRuffle(currentFileData);
+            }
+        });
+
+        qualitySelect.addEventListener('change', () => {
+            if (rufflePlayer) {
+                rufflePlayer.config.quality = qualitySelect.value;
+                if (currentFileData) loadSwfIntoRuffle(currentFileData);
+            }
+        });
+
+        // UI Helpers
+        function enableControls(enable = true) {
+            btnPlayPause.disabled = !enable;
+            btnReload.disabled = !enable;
+            btnMute.disabled = !enable;
+            btnFullscreen.disabled = !enable;
+            scaleSelect.disabled = !enable;
+            qualitySelect.disabled = !enable;
+        }
+
+        function updatePlayPauseIcon() {
+            if (isPlaying) {
+                iconPlayPause.setAttribute('data-lucide', 'pause');
+            } else {
+                iconPlayPause.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
+        }
+
+        function updateMuteIcon() {
+            if (isMuted) {
+                iconMute.setAttribute('data-lucide', 'volume-x');
+            } else {
+                iconMute.setAttribute('data-lucide', 'volume-2');
+            }
+            lucide.createIcons();
+        }
+
+        function updateStatus(text, color) {
+            statusBadge.classList.remove('hidden');
+            statusText.textContent = text;
+            
+            statusDot.className = 'w-2 h-2 rounded-full';
+            if (color === 'emerald') {
+                statusDot.classList.add('bg-emerald-400', 'animate-pulse');
+                metaStatus.className = 'font-medium text-emerald-400';
+            } else if (color === 'amber') {
+                statusDot.classList.add('bg-amber-400', 'animate-pulse');
+                metaStatus.className = 'font-medium text-amber-400';
+            } else if (color === 'rose') {
+                statusDot.classList.add('bg-rose-500');
+                metaStatus.className = 'font-medium text-rose-500';
+            }
+            metaStatus.textContent = text;
+        }
+
+        function updateMetadata(file) {
+            metaName.textContent = file.name;
+            metaSize.textContent = formatBytes(file.size);
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorAlert.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorAlert.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

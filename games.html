@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Classroom</title>
+    <link rel="icon" type="image/png" href="https://ssl.gstatic.com/classroom/favicon.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            background-color: #08090d;
+            color: #f0f3f8;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient Liquid Glow Orbs */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        body::before {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #3b82f6 0%, #1d4ed8 100%);
+            top: -100px;
+            left: -100px;
+        }
+
+        body::after {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, #8b5cf6 0%, #6d28d9 100%);
+            bottom: -150px;
+            right: -150px;
+        }
+
+        #sidebar {
+            width: 360px;
+            background: rgba(18, 20, 29, 0.55);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Liquid Glass Semi-Circle Search Input */
+        .search-input {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 9999px;
+            padding: 6px 14px;
+            color: #ffffff;
+            font-size: 0.85rem;
+            outline: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(165, 180, 252, 0.5);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .section-header {
+            padding: 12px 16px 6px 16px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #38bdf8;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-header.fav-header {
+            color: #f1c40f;
+        }
+
+        #game-list {
+            list-style: none;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding: 10px;
+        }
+
+        /* Custom Glass Scrollbar */
+        #game-list::-webkit-scrollbar, .live-terminal::-webkit-scrollbar, #debug-logs::-webkit-scrollbar {
+            width: 6px;
+        }
+        #game-list::-webkit-scrollbar-thumb, .live-terminal::-webkit-scrollbar-thumb, #debug-logs::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        #game-list li {
+            padding: 12px 16px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.02);
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #game-list li:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            transform: translateX(4px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        #game-list li.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.35) 0%, rgba(139, 92, 246, 0.2) 100%);
+            border: 1px solid rgba(165, 180, 252, 0.4);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+        }
+
+        /* Load Category Button */
+        .load-category-btn {
+            width: 100%;
+            margin: 8px 0 12px 0;
+            padding: 10px 14px;
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .load-category-btn:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: rgba(56, 189, 248, 0.5);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Star Button Styles */
+        .star-btn {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .star-btn:hover {
+            color: #f1c40f;
+            transform: scale(1.25);
+        }
+
+        .star-btn.active {
+            color: #f1c40f;
+            text-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
+        }
+
+        #viewport {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(5, 7, 12, 0.4);
+            position: relative;
+            z-index: 5;
+        }
+
+        #notice-bar {
+            background: rgba(127, 29, 29, 0.35);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(248, 113, 113, 0.25);
+            color: #fecaca;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #notice-bar.hidden {
+            display: none !important;
+        }
+
+        #notice-bar a {
+            color: #fca5a5;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        .notice-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-notice-btn {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 4px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+        }
+
+        .close-notice-btn:hover {
+            background: rgba(239, 68, 68, 0.8);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+        }
+
+        #top-bar {
+            padding: 10px 18px;
+            background: rgba(18, 20, 29, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .top-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .top-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .top-btn.copy-btn {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(3, 105, 161, 0.25) 100%);
+            border-color: rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+        }
+        .top-btn.copy-btn:hover {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.5) 0%, rgba(3, 105, 161, 0.5) 100%);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+        }
+
+        .top-btn.info-btn {
+            background: rgba(255, 255, 255, 0.03);
+            color: #94a3b8;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #4ade80;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .loader-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #f8fafc;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.08);
+            border-left-color: #38bdf8;
+            border-top-color: #818cf8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .live-terminal {
+            width: 100%;
+            max-width: 680px;
+            height: 240px;
+            background: rgba(10, 14, 23, 0.65);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 16px;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        #debug-console {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            max-width: 650px;
+            height: 220px;
+            background: rgba(12, 15, 25, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            border-left: 1px solid rgba(255, 255, 255, 0.12);
+            border-top-left-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.82rem;
+            z-index: 999;
+            box-shadow: -10px -10px 30px rgba(0, 0, 0, 0.5);
+            transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #debug-console.collapsed {
+            height: 36px !important;
+        }
+
+        #debug-header {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        #debug-header span {
+            font-weight: 600;
+            color: #94a3b8;
+        }
+
+        #debug-actions button {
+            background: rgba(255, 255, 255, 0.08);
+            color: #f1f5f9;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3px 10px;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 6px;
+            transition: all 0.2s;
+        }
+
+        #debug-actions button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        #debug-logs {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .log-entry {
+            color: #4ade80;
+            word-break: break-all;
+        }
+
+        .log-warn {
+            color: #fbbf24;
+        }
+
+        .log-error {
+            color: #f87171;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>Web Ports</h2>
+            <input type="text" id="search-bar" class="search-input" placeholder="Search games..." oninput="filterGames()">
+        </div>
+        <ul id="game-list"></ul>
+    </div>
+
+    <div id="viewport">
+        <div id="notice-bar">
+            <span>⚠️ If a game fails to load or shows a black screen, click <strong>"Copy Console Log"</strong> and send it to <a href="mailto:cs38347@owassops.org">cs38347@owassops.org</a>!</span>
+            <div class="notice-actions">
+                <button class="top-btn copy-btn" onclick="copyConsoleLogs()">Copy Console Log</button>
+                <button class="close-notice-btn" onclick="dismissNotice()" title="Minimize Notice">✖ Dismiss</button>
+            </div>
+        </div>
+
+        <div id="top-bar">
+            <button class="top-btn info-btn" onclick="toggleNotice()">Email Info</button>
+            <button class="top-btn copy-btn" onclick="copyConsoleLogs()">Copy Log</button>
+            <button class="top-btn" onclick="toggleConsole()">Toggle Console Log</button>
+            <button class="top-btn" onclick="toggleFullscreen()">Fullscreen</button>
+        </div>
+
+        <div id="placeholder" class="placeholder">
+            <div id="spinner" class="spinner" style="display: none;"></div>
+            <div id="loader-title" class="loader-title">Select a game from the sidebar to play</div>
+            <div id="live-terminal" class="live-terminal" style="display: none;"></div>
+        </div>
+
+        <iframe id="game-frame" style="display: none;" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"></iframe>
+        
+        <div id="debug-console" class="collapsed">
+            <div id="debug-header" onclick="toggleConsole()">
+                <span>📟 Debug Log Console</span>
+                <div id="debug-actions">
+                    <button onclick="event.stopPropagation(); copyConsoleLogs();">Copy Log</button>
+                    <button onclick="event.stopPropagation(); clearConsole();">Clear</button>
+                    <button id="toggle-console-btn">Expand</button>
+                </div>
+            </div>
+            <div id="debug-logs"></div>
+        </div>
+    </div>
+
+    <!-- External UGS Data/Script File -->
+    <script src="./ugs.js"></script>
+
+    <script>
+        const rawLogs = [];
+        const debugLogs = document.getElementById('debug-logs');
+        const debugConsole = document.getElementById('debug-console');
+        const toggleConsoleBtn = document.getElementById('toggle-console-btn');
+        const liveTerminal = document.getElementById('live-terminal');
+        const loaderTitle = document.getElementById('loader-title');
+        const spinner = document.getElementById('spinner');
+        const noticeBar = document.getElementById('notice-bar');
+
+        // State to keep track of expanded categories
+        const loadedCategories = {
+            github: false,
+            ugs: false
+        };
+
+        // Load Persistent Favorites from localStorage
+        let favorites = JSON.parse(localStorage.getItem('favoriteGames')) || [];
+
+        function toggleFavorite(id) {
+            if (favorites.includes(id)) {
+                favorites = favorites.filter(favId => favId !== id);
+            } else {
+                favorites.push(id);
+            }
+            localStorage.setItem('favoriteGames', JSON.stringify(favorites));
+            renderList();
+            filterGames();
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./games/sw.js').catch(err => {
+                console.warn('Service Worker registration failed:', err);
+            });
+
+            navigator.serviceWorker.addEventListener('message', event => {
+                if (event.data && event.data.type === 'FETCH_LOG') {
+                    const status = event.data.success ? '✓' : '❌';
+                    const logType = event.data.success ? 'info' : 'warn';
+                    appendLog(`[SW ${status}] Serving virtual path: ${event.data.path}`, logType);
+                }
+            });
+        }
+
+        function dismissNotice() {
+            noticeBar.classList.add('hidden');
+        }
+
+        function toggleNotice() {
+            noticeBar.classList.toggle('hidden');
+        }
+
+        function appendLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const formatted = `[${time}] ${typeof message === 'object' ? JSON.stringify(message) : message}`;
+            rawLogs.push(formatted);
+
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = formatted;
+            debugLogs.appendChild(entry);
+            debugLogs.scrollTop = debugLogs.scrollHeight;
+
+            if (liveTerminal && liveTerminal.style.display !== 'none') {
+                const termEntry = document.createElement('div');
+                termEntry.className = `log-entry log-${type}`;
+                termEntry.textContent = formatted;
+                liveTerminal.appendChild(termEntry);
+                liveTerminal.scrollTop = liveTerminal.scrollHeight;
+            }
+        }
+
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+
+        console.log = function(...args) { originalLog.apply(console, args); appendLog(args.join(' '), 'info'); };
+        console.warn = function(...args) { originalWarn.apply(console, args); appendLog(args.join(' '), 'warn'); };
+        console.error = function(...args) { originalError.apply(console, args); appendLog(args.join(' '), 'error'); };
+
+        window.onerror = function(msg, url, line) {
+            console.error(`Global Error: ${msg} (at ${url}:${line})`);
+        };
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error(`Unhandled Rejection: ${event.reason}`);
+        });
+
+        function copyConsoleLogs() {
+            if (rawLogs.length === 0) {
+                alert("No logs captured yet!");
+                return;
+            }
+            const fullLogText = rawLogs.join('\n');
+            navigator.clipboard.writeText(fullLogText).then(() => {
+                alert("Console log copied to clipboard! Paste it into your email to cs38347@owassops.org.");
+            }).catch(() => {
+                alert("Failed to auto-copy. Expanding console overlay to let you copy manually.");
+                debugConsole.classList.remove('collapsed');
+            });
+        }
+
+        function toggleConsole() {
+            debugConsole.classList.toggle('collapsed');
+            toggleConsoleBtn.textContent = debugConsole.classList.contains('collapsed') ? 'Expand' : 'Collapse';
+        }
+
+        function clearConsole() {
+            debugLogs.innerHTML = '';
+            rawLogs.length = 0;
+        }
+
+        const customGames = [
+            { "id": "custom_eagler", "title": "Eaglercraft Launcher", "type": "html", "url": "./games/eagler.html" },
+            { "id": "custom_gd", "title": "Geometry Dash (Web Dashers)", "type": "html", "url": "./games/gd.html" }
+        ];
+
+        const games = [
+              { "id": "gh_amanda", "title": "Amanda The Adventurer", "repo": "genizy/web-port", "path": "/amanda-the-adventurer/" },
+              { "id": "gh_andy", "title": "Andy's Apple Farm", "repo": "genizy/web-port", "path": "/andys-apple-farm/" },
+              { "id": "gh_antonblast", "title": "Antonblast", "repo": "web-ports/antonblast", "path": "/" },
+              { "id": "gh_adgac", "title": "A Difficult Game About Climbing", "repo": "web-ports/adgac", "path": "/" },
+              { "id": "gh_balatro", "title": "Balatro", "repo": "W0W53R/web-balatro", "path": "/" },
+              { "id": "gh_baldibash", "title": "Baldi's Basics Birthday Bash", "repo": "woahhcrackers/BirthdayBashWeb", "path": "/" },
+              { "id": "gh_baldiremaster", "title": "Baldi's Basics Classic Remastered", "repo": "genizy/web-port", "path": "/baldi-remaster/" },
+              { "id": "gh_baldiplus", "title": "Baldi's Basics Plus", "repo": "genizy/web-port", "path": "/baldi-plus/" },
+              { "id": "gh_baldiminus3", "title": "Baldi's Basics: Minus 3", "repo": "aukak/-3", "path": "/" },
+              { "id": "gh_bat2bed", "title": "Bat to Bed Demo", "repo": "gays-studio/BatToBed-DEMO-webport", "path": "/" },
+              { "id": "gh_bat2heavens", "title": "Bat to the Heavens", "repo": "gays-studio/bat-to-the-heavens", "path": "/" },
+              { "id": "gh_batim", "title": "Bendy and The Ink Machine", "repo": "woahhcrackers/BATIMWeb", "path": "/" },
+              { "id": "gh_bergentruck", "title": "BERGENTRUCK 201x", "repo": "genizy/web-port", "path": "/bergentruck/" },
+              { "id": "gh_bloodmoney", "title": "BLOODMONEY!", "repo": "genizy/web-port", "path": "/bloodmoney/" },
+              { "id": "gh_boilnoodles", "title": "boil Noodles at Night", "repo": "SomeRandomFella/portsandrips", "path": "/boilnoodles/" },
+              { "id": "gh_buckshot", "title": "Buckshot Roulette", "repo": "genizy/web-port", "path": "/buckshot-roulette/" },
+              { "id": "gh_brotato", "title": "Brotato", "repo": "BlueGameMC/BrotatoWeb", "path": "/" },
+              { "id": "gh_cheeserollers", "title": "Cheese Rollers", "repo": "SomeRandomFella/portsandrips", "path": "/CheeseRollingWeb/" },
+              { "id": "gh_xmasmassacre", "title": "Christmas Massacre", "repo": "web-ports/christmas-massacre", "path": "/" },
+              { "id": "gh_classof09", "title": "Class of '09", "repo": "genizy/web-port", "path": "/class-of-09/" },
+              { "id": "gh_cloverpit", "title": "Clover Pit", "repo": "web-ports/clover-pit", "path": "/" },
+              { "id": "gh_cs_hl", "title": "Counter Strike & Half Life", "repo": "x8BitRain/webXash", "path": "/" },
+              { "id": "gh_cuphead", "title": "Cuphead", "repo": "web-ports/cuphead", "path": "/" },
+              { "id": "gh_celeste", "title": "Celeste", "repo": "MercuryWorkshop/celeste-wasm", "path": "/" },
+              { "id": "gh_deadplate", "title": "Dead Plate", "repo": "genizy/web-port", "path": "/dead-plate/" },
+              { "id": "gh_deadseat", "title": "Deadseat", "repo": "genizy/web-port", "path": "/deadseat/" },
+              { "id": "gh_dawnfolk", "title": "Dawnfolk", "repo": "degloved-net/dawnfolk", "path": "/" },
+              { "id": "gh_diceamillion", "title": "Dice a Million", "repo": "NotRexed/Unblocked-Games", "path": "/diceamillion/" },
+              { "id": "gh_ddlc", "title": "Doki Doki Literature Club", "repo": "EmeraldGreenR/EmeraldGreenR.github.io", "path": "/" },
+              { "id": "gh_cat_home", "title": "Do NOT Take This Cat Home", "repo": "genizy/web-port", "path": "/donottakethiscathome/" },
+              { "id": "gh_doom", "title": "Doom Engine", "repo": "GMH-Code/Dwasm", "path": "/" },
+              { "id": "gh_doom3", "title": "Doom 3", "repo": "web-ports/doom-3", "path": "/" },
+              { "id": "gh_ducklife", "title": "Duck Life Adventure", "repo": "aukak/duck-life-adventure", "path": "/" },
+              { "id": "gh_dumbways", "title": "Dumb Ways to Die (v1.6)", "repo": "web-ports/dumb-ways-to-die", "path": "/" },
+              { "id": "gh_fearhunger", "title": "Fear and Hunger", "repo": "web-ports/fear-and-hunger", "path": "/" },
+              { "id": "gh_ftfha", "title": "Fears to Fathom: Home Alone", "repo": "slqntdevss/FTFHAPort", "path": "/" },
+              { "id": "gh_fish", "title": "fish", "repo": "web-ports/fish", "path": "/" },
+              { "id": "gh_fnaf", "title": "FNAF", "repo": "genizy/web-port", "path": "/fnaf/" },
+              { "id": "gh_fnac1", "title": "Five Nights at Candy's 1", "repo": "web-ports/fnac", "path": "/1/" },
+              { "id": "gh_fnac2", "title": "Five Nights at Candy's 2", "repo": "web-ports/fnac", "path": "/2/" },
+              { "id": "gh_fnae", "title": "Five Nights at Epstein's", "repo": "web-ports/fnae", "path": "/" },
+              { "id": "gh_fnaf1", "title": "Five Nights at Freddy's 1", "repo": "irv77/hd_fnaf", "path": "/1/" },
+              { "id": "gh_fnaf2", "title": "Five Nights at Freddy's 2", "repo": "irv77/hd_fnaf", "path": "/2/" },
+              { "id": "gh_fnaf3", "title": "Five Nights at Freddy's 3", "repo": "irv77/hd_fnaf", "path": "/3/" },
+              { "id": "gh_fnaf4", "title": "Five Nights at Freddy's 4", "repo": "irv77/hd_fnaf", "path": "/4/" },
+              { "id": "gh_fnafps", "title": "Five Nights at Freddy's: Pizzeria Simulator", "repo": "irv77/hd_fnaf", "path": "/ps/" },
+              { "id": "gh_fnafsl", "title": "Five Nights at Freddy's Sister Location", "repo": "irv77/hd_fnaf", "path": "/sl/" },
+              { "id": "gh_fnafucn", "title": "Five Nights at Freddy's Ultimate Custom Night", "repo": "irv77/hd_fnaf", "path": "/ucn/" },
+              { "id": "gh_fnafw", "title": "Five Nights at Freddy's World", "repo": "irv77/hd_fnaf", "path": "/w/" },
+              { "id": "gh_fnafwr", "title": "Five Nights at Freddy's World: Refreshed", "repo": "web-ports/fnaf-world-refreshed", "path": "/" },
+              { "id": "gh_flyinggorilla", "title": "Flying Gorilla", "repo": "web-ports/flying-gorilla", "path": "/" },
+              { "id": "gh_gettingoverit", "title": "Getting Over It", "repo": "genizy/web-port", "path": "/getting-over-it/" },
+              { "id": "gh_gorillatag", "title": "Gorilla Tag", "repo": "web-ports/gorilla-tag", "path": "/" },
+              { "id": "gh_granny", "title": "Granny", "repo": "web-ports/granny", "path": "/" },
+              { "id": "gh_gtavc", "title": "GTA Vice City", "repo": "Lolendor/reVCDOS", "path": "/" },
+              { "id": "gh_happysheepies", "title": "Happy Sheepies", "repo": "genizy/web-port", "path": "/happy-sheepies/" },
+              { "id": "gh_hayai", "title": "HAYAI", "repo": "degloved-net/HAYAI", "path": "/" },
+              { "id": "gh_hotlinemiami", "title": "Hotline Miami", "repo": "genizy/web-port", "path": "/hotline-miami/" },
+              { "id": "gh_hollowknight", "title": "Hollow Knight", "repo": "aukak/hollow-knight", "path": "/" },
+              { "id": "gh_silksong", "title": "Hollow Knight: Silksong", "repo": "web-ports/hollow-knight-silksong", "path": "/" },
+              { "id": "gh_ironlung", "title": "Iron Lung", "repo": "web-ports/iron-lung", "path": "/" },
+              { "id": "gh_jellydrift", "title": "Jelly Drift", "repo": "genizy/web-port", "path": "/jelly-drift/" },
+              { "id": "gh_jenny", "title": "JENNY", "repo": "MRVAPORWAVE25/JennyGameFiles", "path": "/" },
+              { "id": "gh_karlson", "title": "Karlson", "repo": "genizy/web-port", "path": "/karlson/" },
+              { "id": "gh_iceagebaby", "title": "Kill the Ice Age Baby Adventure 2", "repo": "SomeRandomFella/kill-ice-age-baby-adventure-2-", "path": "/" },
+              { "id": "gh_kindergarten", "title": "Kindergarten 1 & 2", "repo": "genizy/web-port", "path": "/kindergarten/" },
+              { "id": "gh_kindergarten3", "title": "Kindergarten 3", "repo": "slqntdevss/Kindergarten3Port", "path": "/" },
+              { "id": "gh_klifur", "title": "Klifur", "repo": "aukak/klifur", "path": "/" },
+              { "id": "gh_laceysflash", "title": "Lacey's Flash Games", "repo": "genizy/web-port", "path": "/laceys-flash-games/" },
+              { "id": "gh_marbleblast", "title": "Marble Blast Gold & Marble Blast Platinum", "repo": "Vanilagy/MarbleBlast", "path": "/" },
+              { "id": "gh_milkin", "title": "Milk inside a bag of milk inside a bag of milk", "repo": "web-ports/milk-bag-games", "path": "/inside/" },
+              { "id": "gh_milkout", "title": "Milk outside a bag of milk outside a bag of milk", "repo": "web-ports/milk-bag-games", "path": "/outside/" },
+              { "id": "gh_milkman", "title": "Milkman Karlson", "repo": "aukak/gameports", "path": "/milkman%20karlson/" },
+              { "id": "gh_miside", "title": "MiSide", "repo": "woahhcrackers/MiSideWeb", "path": "/" },
+              { "id": "gh_stalin", "title": "My Dictator Stalin Can't Be This Cute ?!", "repo": "degloved-net/my-dictator-stalin-cant-be-this-cute", "path": "/" },
+              { "id": "gh_femboy", "title": "My Femboy Roommate", "repo": "gays-studio/mfr-webport", "path": "/" },
+              { "id": "gh_needystreamer", "title": "Needy Streamer Overload", "repo": "web-ports/needy-streamer-overload", "path": "/" },
+              { "id": "gh_nodebuster", "title": "Nodebuster", "repo": "degloved-net/nodebuster", "path": "/" },
+              { "id": "gh_nothing", "title": "Nothing", "repo": "gays-studio/nothing-wasm-web", "path": "/" },
+              { "id": "gh_omori", "title": "OMORI", "repo": "genizy/web-port", "path": "/omori-web-port/" },
+              { "id": "gh_oneshot", "title": "Oneshot: World Machine Edition", "repo": "MercuryWorkshop/webshot", "path": "/" },
+              { "id": "gh_peaksofyore", "title": "Peaks of Yore", "repo": "web-ports/peaks-of-yore", "path": "/" },
+              { "id": "gh_peopleplayground", "title": "People Playground", "repo": "bubbls/ugss", "path": "/people-playground/" },
+              { "id": "gh_pizzatower", "title": "Pizza Tower", "repo": "genizy/web-port", "path": "/pizza-tower/" },
+              { "id": "gh_pvzfusion", "title": "Plants vs Zombies: Fusion", "repo": "gays-studio/pvzfusion", "path": "/" },
+              { "id": "gh_powerhover", "title": "Power Hover", "repo": "web-ports/power-hover", "path": "/" },
+              { "id": "gh_quake", "title": "Quake", "repo": "GMH-Code/Qwasm", "path": "/" },
+              { "id": "gh_quake2", "title": "Quake 2", "repo": "GMH-Code/Qwasm2", "path": "/" },
+              { "id": "gh_raft", "title": "RAFT", "repo": "genizy/web-port", "path": "/raft/" },
+              { "id": "gh_repo", "title": "R.E.P.O", "repo": "genizy/web-port", "path": "/repo/" },
+              { "id": "gh_rerun", "title": "RE:RUN", "repo": "aukak/RE-RUN", "path": "/" },
+              { "id": "gh_saihate", "title": "Saihate Station", "repo": "web-ports/saihate-station", "path": "/" },
+              { "id": "gh_scoutdingo", "title": "Scoutdingo", "repo": "web-ports/scoutdingo", "path": "/" },
+              { "id": "gh_shiftatmidnight", "title": "Shift at Midnight", "repo": "webporting/Shift-At-Midnight", "path": "/" },
+              { "id": "gh_slender", "title": "Slender: The Eight Pages", "repo": "genizy/web-port", "path": "/slender/" },
+              { "id": "gh_slimeranchers", "title": "Slime Ranchers", "repo": "web-ports/slime-ranchers", "path": "/" },
+              { "id": "gh_soniccd", "title": "Sonic CD", "repo": "TWS2401/Sonic-CD-WASM", "path": "/" },
+              { "id": "gh_sonic1", "title": "Sonic the Hedgehog (2013)", "repo": "VinMannie/Sonic-1-WASM", "path": "/" },
+              { "id": "gh_sonic2", "title": "Sonic the Hedgehog 2", "repo": "VinMannie/Sonic-2-WASM", "path": "/" },
+              { "id": "gh_sonicmania", "title": "Sonic Mania", "repo": "VinMannie/SonicManiaWeb", "path": "/" },
+              { "id": "gh_srb2", "title": "Sonic Robo Blast 2", "repo": "chromaticpipe/SRB2-WASM", "path": "/" },
+              { "id": "gh_speedstars", "title": "Speed Stars", "repo": "genizy/web-port", "path": "/speed-stars/" },
+              { "id": "gh_srb2kart", "title": "SRB2 Kart", "repo": "skyleite/Kart-Public-WASM", "path": "/" },
+              { "id": "gh_sm64fps", "title": "Super Mario 64 FPS", "repo": "gays-studio/sm64fps-port", "path": "/" },
+              { "id": "gh_sunky", "title": "Sunky's Schoolhouse", "repo": "gays-studio/sunkys-schoolhouse-webport", "path": "/" },
+              { "id": "gh_terraria", "title": "Terraria", "repo": "mercuryWorkshop/terraria-wasm", "path": "/" },
+              { "id": "gh_neighbor", "title": "That's Not My Neighbor", "repo": "genizy/web-port", "path": "/thats-not-my-neighbor/" },
+              { "id": "gh_manwindow", "title": "The Man From the Window", "repo": "genizy/web-port", "path": "/the-man-in-the-window/" },
+              { "id": "gh_touhoumother", "title": "Touhou Mother", "repo": "aukak/gameports", "path": "/touhou%20mother/" },
+              { "id": "gh_trafficracer", "title": "Traffic Racer", "repo": "genizy/traffic-racer", "path": "/" },
+              { "id": "gh_trizon", "title": "TriZon", "repo": "degloved-net/trizon", "path": "/" },
+              { "id": "gh_ultrakill", "title": "Ultrakill Prelude", "repo": "genizy/web-port", "path": "/ultrakill/" },
+              { "id": "gh_ultrapool", "title": "Ultrapool", "repo": "ParrrotVR/ultrapoolwebport", "path": "/" },
+              { "id": "gh_undertale", "title": "Undertale", "repo": "genizy/web-port", "path": "/undertale/" },
+              { "id": "gh_undertaleyellow", "title": "Undertale Yellow", "repo": "genizy/web-port", "path": "/undertale-yellow/" },
+              { "id": "gh_unrealgold", "title": "Unreal Gold", "repo": "National-Porting-Association/unrealgold-emscripten", "path": "/" },
+              { "id": "gh_goosegame", "title": "Untitled Goose Game", "repo": "web-ports/untitled-goose-game", "path": "/" },
+              { "id": "gh_upstream", "title": "Upstream", "repo": "degloved-net/upstream", "path": "/" },
+              { "id": "gh_voidwhispers", "title": "Void Whispers", "repo": "degloved-net/void-whispers", "path": "/" },
+              { "id": "gh_webfishing", "title": "Webfishing", "repo": "genizy/web-port", "path": "/web-fishing/" },
+              { "id": "gh_witchheart", "title": "Witch's Heart", "repo": "genizy/web-port", "path": "/witch-heart/" },
+              { "id": "gh_xash3d", "title": "Xash3D", "repo": "btarg/Xash3D-Emscripten", "path": "/" },
+              { "id": "gh_yomi", "title": "Your Only Move is Hustle", "repo": "webporting/Your-Only-Move-Is-HUSTLE", "path": "/" },
+              { "id": "gh_yumenikki", "title": "Yume Nikki", "repo": "genizy/web-port", "path": "/yume-nikki/" }
+        ];
+
+        const gameListElem = document.getElementById('game-list');
+        const gameFrame = document.getElementById('game-frame');
+        const placeholder = document.getElementById('placeholder');
+
+        function createGameListItem(title, id, onClickAction) {
+            const li = document.createElement('li');
+            
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = title;
+            li.appendChild(titleSpan);
+
+            const isFav = favorites.includes(id);
+
+            const starBtn = document.createElement('button');
+            starBtn.className = `star-btn ${isFav ? 'active' : ''}`;
+            starBtn.innerHTML = '★';
+            starBtn.title = isFav ? 'Remove from Favorites' : 'Add to Favorites';
+
+            starBtn.onclick = (e) => {
+                e.stopPropagation();
+                toggleFavorite(id);
+            };
+
+            li.appendChild(starBtn);
+            li.onclick = () => onClickAction(li);
+            return li;
+        }
+
+        function renderList() {
+            gameListElem.innerHTML = '';
+
+            // Collect all games into unified catalog for Favorite Lookup
+            const allCatalog = [];
+
+            customGames.forEach(g => {
+                allCatalog.push({
+                    id: g.id,
+                    title: g.title,
+                    action: (li) => loadCustomGame(g, li)
+                });
+            });
+
+            games.forEach(g => {
+                allCatalog.push({
+                    id: g.id,
+                    title: g.title,
+                    action: (li) => loadAndRewriteGame(g, li)
+                });
+            });
+
+            if (typeof ugsFiles !== 'undefined' && ugsFiles.length > 0) {
+                ugsFiles.forEach(file => {
+                    let cleanTitle = file.startsWith('cl') ? file.substring(2) : file;
+                    cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+                    allCatalog.push({
+                        id: `ugs_${file}`,
+                        title: cleanTitle,
+                        action: (li) => loadUgsGame(file, li)
+                    });
+                });
+            }
+
+            // Render Favorites Section (Pinned Top)
+            const favGames = allCatalog.filter(g => favorites.includes(g.id));
+            if (favGames.length > 0) {
+                const favHeader = document.createElement('div');
+                favHeader.className = 'section-header fav-header';
+                favHeader.textContent = '★ Favorites';
+                gameListElem.appendChild(favHeader);
+
+                favGames.forEach(g => {
+                    gameListElem.appendChild(createGameListItem(g.title, g.id, g.action));
+                });
+            }
+
+            // Render Custom Games Section
+            if (customGames.length > 0) {
+                const customHeader = document.createElement('div');
+                customHeader.className = 'section-header';
+                customHeader.textContent = 'Custom Games';
+                gameListElem.appendChild(customHeader);
+
+                customGames.forEach(game => {
+                    gameListElem.appendChild(createGameListItem(game.title, game.id, (li) => loadCustomGame(game, li)));
+                });
+            }
+
+            // Render Standard GitHub Games Section
+            const githubHeader = document.createElement('div');
+            githubHeader.className = 'section-header';
+            githubHeader.textContent = 'GitHub Web Ports';
+            gameListElem.appendChild(githubHeader);
+
+            if (loadedCategories.github) {
+                games.forEach(game => {
+                    gameListElem.appendChild(createGameListItem(game.title, game.id, (li) => loadAndRewriteGame(game, li)));
+                });
+            } else {
+                const loadBtn = document.createElement('button');
+                loadBtn.className = 'load-category-btn';
+                loadBtn.textContent = 'Load GitHub Web Ports List';
+                loadBtn.onclick = () => {
+                    loadedCategories.github = true;
+                    renderList();
+                    filterGames();
+                };
+                gameListElem.appendChild(loadBtn);
+            }
+
+            // Render UGS Games Section
+            if (typeof ugsFiles !== 'undefined' && ugsFiles.length > 0) {
+                const ugsHeader = document.createElement('div');
+                ugsHeader.className = 'section-header';
+                ugsHeader.textContent = 'UGS Singlefile Games';
+                gameListElem.appendChild(ugsHeader);
+
+                if (loadedCategories.ugs) {
+                    ugsFiles.forEach(file => {
+                        let cleanTitle = file.startsWith('cl') ? file.substring(2) : file;
+                        cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+                        const id = `ugs_${file}`;
+                        gameListElem.appendChild(createGameListItem(cleanTitle, id, (li) => loadUgsGame(file, li)));
+                    });
+                } else {
+                    const loadBtn = document.createElement('button');
+                    loadBtn.className = 'load-category-btn';
+                    loadBtn.textContent = 'Load UGS Singlefile Games List';
+                    loadBtn.onclick = () => {
+                        loadedCategories.ugs = true;
+                        renderList();
+                        filterGames();
+                    };
+                    gameListElem.appendChild(loadBtn);
+                }
+            }
+        }
+
+        renderList();
+
+        function filterGames() {
+            const query = document.getElementById('search-bar').value.toLowerCase();
+            
+            // If the user types a search query, automatically load all categories so matches are found
+            if (query.trim() !== '') {
+                if (!loadedCategories.github || !loadedCategories.ugs) {
+                    loadedCategories.github = true;
+                    loadedCategories.ugs = true;
+                    renderList();
+                }
+            }
+
+            const items = gameListElem.querySelectorAll('li');
+            const headers = gameListElem.querySelectorAll('.section-header');
+
+            items.forEach(item => {
+                const titleText = item.querySelector('span') ? item.querySelector('span').textContent : item.textContent;
+                const match = titleText.toLowerCase().includes(query);
+                item.style.display = match ? 'flex' : 'none';
+            });
+
+            headers.forEach(header => {
+                let nextElem = header.nextElementSibling;
+                let hasVisible = false;
+                while (nextElem && !nextElem.classList.contains('section-header')) {
+                    if (nextElem.tagName === 'LI' && nextElem.style.display !== 'none') {
+                        hasVisible = true;
+                        break;
+                    }
+                    nextElem = nextElem.nextElementSibling;
+                }
+                header.style.display = hasVisible ? '' : 'none';
+            });
+        }
+
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        async function loadCustomGame(game, element) {
+            console.log(`--- Starting Custom Game Load Sequence: ${game.title} ---`);
+            document.querySelectorAll('#game-list li').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+
+            placeholder.style.display = 'flex';
+            spinner.style.display = 'block';
+            liveTerminal.style.display = 'flex';
+            liveTerminal.innerHTML = '';
+            loaderTitle.textContent = `LOADING CUSTOM GAME: ${game.title.toUpperCase()}`;
+            loaderTitle.style.color = '#f8fafc';
+            gameFrame.style.display = 'none';
+
+            try {
+                if (game.type === 'zip') {
+                    console.log(`Downloading custom ZIP archive from: ${game.url}`);
+                    const resp = await fetch(game.url);
+                    if (!resp.ok) throw new Error(`HTTP Error ${resp.status}`);
+                    const data = await resp.arrayBuffer();
+
+                    console.log("Decompressing ZIP archive...");
+                    const zip = await JSZip.loadAsync(data);
+                    const blobMap = {};
+                    const paths = Object.keys(zip.files).filter(p => !zip.files[p].dir);
+
+                    for (const path of paths) {
+                        const content = await zip.files[path].async("uint8array");
+                        const ext = path.split('.').pop().toLowerCase();
+                        let type = 'application/octet-stream';
+                        if (ext === 'html') type = 'text/html';
+                        if (ext === 'js') type = 'application/javascript';
+                        if (ext === 'css') type = 'text/css';
+                        if (ext === 'png') type = 'image/png';
+                        if (ext === 'jpg' || ext === 'jpeg') type = 'image/jpeg';
+                        if (ext === 'json') type = 'application/json';
+
+                        blobMap[path] = URL.createObjectURL(new Blob([content], { type }));
+                    }
+
+                    if (navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({ type: 'SET_FILES', files: blobMap });
+                    } else {
+                        throw new Error("Service Worker is not active yet to host virtual ZIP files.");
+                    }
+
+                    const entry = paths.find(p => p.toLowerCase().endsWith('index.html')) || paths.find(p => p.toLowerCase().endsWith('.html'));
+                    if (!entry) throw new Error("No HTML entry point found inside ZIP!");
+
+                    const virtualUrl = window.location.origin + '/_vfs/' + entry;
+                    console.log(`Mounting game into frame: ${virtualUrl}`);
+                    
+                    placeholder.style.display = 'none';
+                    gameFrame.style.display = 'block';
+                    gameFrame.srcdoc = '';
+                    gameFrame.src = virtualUrl;
+
+                } else if (game.type === 'html' || game.type === 'txt') {
+                    console.log(`Fetching direct ${game.type.toUpperCase()} file from: ${game.url}`);
+                    const resp = await fetch(game.url);
+                    if (!resp.ok) throw new Error(`HTTP Error ${resp.status}`);
+                    
+                    const fileText = await resp.text();
+
+                    placeholder.style.display = 'none';
+                    gameFrame.style.display = 'block';
+                    gameFrame.src = '';
+                    gameFrame.srcdoc = fileText; 
+                } else {
+                    throw new Error("Invalid custom game configuration type.");
+                }
+
+                console.log(`🎉 [SUCCESS] Custom launch sequence completed for ${game.title}!`);
+
+            } catch (err) {
+                console.error(`❌ LOAD FAILED: ${err.message}`);
+                spinner.style.display = 'none';
+                loaderTitle.textContent = `CRITICAL FAILURE: ${game.title.toUpperCase()}`;
+                loaderTitle.style.color = '#f87171';
+                debugConsole.classList.remove('collapsed');
+                toggleConsoleBtn.textContent = 'Collapse';
+            }
+        }
+
+        async function fetchFromMultiCDN(game) {
+            let path = game.path || '/';
+            if (!path.startsWith('/')) path = '/' + path;
+            if (!path.endsWith('/')) path += '/';
+
+            const rawGithubUrl = `https://raw.githubusercontent.com/${game.repo}/main${path}`;
+
+            const cdnProviders = [
+                {
+                    name: 'jsDelivr CDN',
+                    base: `https://cdn.jsdelivr.net/gh/${game.repo}@main${path}`
+                },
+                {
+                    name: 'CORSProxy.io',
+                    base: `https://corsproxy.io/?${encodeURIComponent(rawGithubUrl)}`
+                },
+                {
+                    name: 'Statically Proxy',
+                    base: `https://cdn.statically.io/gh/${game.repo}/main${path}`
+                },
+                {
+                    name: 'Raw GitHub',
+                    base: rawGithubUrl
+                }
+            ];
+
+            const maxRetries = 2;
+
+            for (const cdn of cdnProviders) {
+                const targetUrl = cdn.name === 'CORSProxy.io' ? cdn.base + 'index.html' : `${cdn.base}index.html`;
+
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    console.log(`Connecting to [${cdn.name}] (Attempt ${attempt}/${maxRetries})...`);
+
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+                        const response = await fetch(targetUrl, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (response.ok) {
+                            const htmlText = await response.text();
+                            console.log(`✓ Connected! Fetched index.html via [${cdn.name}]`);
+                            return { htmlText, baseUrl: cdn.base };
+                        } else {
+                            console.warn(`⚠️ [${cdn.name}] HTTP ${response.status} (${response.statusText || 'Error'})`);
+                        }
+                    } catch (err) {
+                        if (err.name === 'AbortError') {
+                            console.warn(`⚠️ [${cdn.name}] Timed out after 6 seconds.`);
+                        } else {
+                            console.warn(`⚠️ [${cdn.name}] Connection error: ${err.message}`);
+                        }
+                    }
+
+                    if (attempt < maxRetries) {
+                        await sleep(800);
+                    }
+                }
+            }
+
+            throw new Error("All proxy endpoints failed or were blocked by network filters.");
+        }
+
+        async function loadAndRewriteGame(game, element) {
+            console.log(`--- Starting Load Sequence: ${game.title} ---`);
+            document.querySelectorAll('#game-list li').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+
+            placeholder.style.display = 'flex';
+            spinner.style.display = 'block';
+            liveTerminal.style.display = 'flex';
+            liveTerminal.innerHTML = '';
+            loaderTitle.textContent = `LOADING: ${game.title.toUpperCase()}`;
+            loaderTitle.style.color = '#f8fafc';
+            gameFrame.style.display = 'none';
+
+            try {
+                const { htmlText, baseUrl } = await fetchFromMultiCDN(game);
+
+                console.log("Injecting Base tags & rewriting asset URLs...");
+                let processedHtml = htmlText;
+                const baseTag = `<base href="${baseUrl}">`;
+                if (processedHtml.includes('<head>')) {
+                    processedHtml = processedHtml.replace('<head>', `<head>${baseTag}`);
+                } else {
+                    processedHtml = baseTag + processedHtml;
+                }
+
+                processedHtml = processedHtml.replace(/(src|href)=["']\/([^"']+)["']/g, (match, attr, filePath) => {
+                    return `${attr}="${baseUrl}${filePath}"`;
+                });
+
+                console.log("Mounting runtime frame...");
+                placeholder.style.display = 'none';
+                gameFrame.style.display = 'block';
+                gameFrame.src = '';
+                gameFrame.srcdoc = processedHtml;
+                console.log(`🎉 [SUCCESS] Launch sequence completed for ${game.title}!`);
+
+            } catch (err) {
+                console.error(`❌ LOAD FAILED: ${err.message}`);
+                spinner.style.display = 'none';
+                loaderTitle.textContent = `CRITICAL FAILURE: ${game.title.toUpperCase()}`;
+                loaderTitle.style.color = '#f87171';
+
+                debugConsole.classList.remove('collapsed');
+                toggleConsoleBtn.textContent = 'Collapse';
+                console.error(`Please click "Copy Log" above and send it to cs38347@owassops.org.`);
+            }
+        }
+
+        async function loadUgsGame(filename, element) {
+            console.log(`--- Starting UGS Game Load Sequence: ${filename} ---`);
+            document.querySelectorAll('#game-list li').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+
+            placeholder.style.display = 'flex';
+            spinner.style.display = 'block';
+            liveTerminal.style.display = 'flex';
+            liveTerminal.innerHTML = '';
+            loaderTitle.textContent = `LOADING UGS GAME: ${filename.toUpperCase()}`;
+            loaderTitle.style.color = '#f8fafc';
+            gameFrame.style.display = 'none';
+
+            try {
+                const normalized = (filename.includes('.') && filename.lastIndexOf('.') > 0) 
+                    ? filename 
+                    : `${filename}.html`;
+
+                const encoded = encodeURIComponent(normalized);
+                
+                const cdnUrls = [
+                    `https://cdn.jsdelivr.net/gh/bubbls/ugs-singlefile/UGS-Files/${encoded}?t=${Date.now()}`,
+                    `https://raw.githubusercontent.com/bubbls/ugs-singlefile/main/UGS-Files/${encoded}`
+                ];
+
+                let fileText = null;
+
+                for (const url of cdnUrls) {
+                    try {
+                        console.log(`Fetching UGS file from: ${url}`);
+                        const resp = await fetch(url);
+                        if (resp.ok) {
+                            fileText = await resp.text();
+                            break;
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to fetch from ${url}: ${e.message}`);
+                    }
+                }
+
+                if (!fileText) {
+                    throw new Error("Unable to retrieve file from jsDelivr or GitHub raw fallback.");
+                }
+
+                placeholder.style.display = 'none';
+                gameFrame.style.display = 'block';
+                gameFrame.src = '';
+                gameFrame.srcdoc = fileText;
+
+                console.log(`🎉 [SUCCESS] UGS launch sequence completed for ${filename}!`);
+
+            } catch (err) {
+                console.error(`❌ UGS LOAD FAILED: ${err.message}`);
+                spinner.style.display = 'none';
+                loaderTitle.textContent = `CRITICAL FAILURE: ${filename.toUpperCase()}`;
+                loaderTitle.style.color = '#f87171';
+                debugConsole.classList.remove('collapsed');
+                toggleConsoleBtn.textContent = 'Collapse';
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                if (gameFrame.requestFullscreen) {
+                    gameFrame.requestFullscreen();
+                } else if (gameFrame.webkitRequestFullscreen) {
+                    gameFrame.webkitRequestFullscreen();
+                } else if (gameFrame.msRequestFullscreen) {
+                    gameFrame.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

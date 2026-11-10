@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eaglercraft Launcher</title>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAjVBMVEVSpDUAAAArZRsqYxwAAANWqjdSpTRQoDEnYRgeSRdop0+G1mF9zVuJ12RTrDcJBAQFCAV7w1gkVhlIjS9Gjy0kWhkdRRWN4Wdtvk5OoDFUozhOoi5WpTglXRcoYB5JkjMhSBQcQBRarD0rZRhtpVSE0mV6x1R90GFOmzIoVx0YSg9+wVp+0lsJBgBWqT5sUnT+AAADKElEQVR4nO3d23aaQABGYYgwmCaYE2JFMWqaNk1N3v/xilddS4aVf5QJY7q/a5g128ETARNFAAAAAAAAAAAAAAAAAAAAAIBzZtQNl8bI25qlvOl+AvrGx6jE7ZYmdZhJk7iUt5XncBRT1GNNvarlSUdmOhKHHY8f9WPjiL4qLVYj1VSeSTW5v1BHrQvjcQ2bp9bj+EKlF0bLWh51XDg8aY8qLC81r+vNRB433ajDXm4Kr0epMUWsS+WBU4dRHzwfpXJhEsfyGlaT/eaiwuu7hTEP8kwST2tYeH07pJDCLhRS2B8KKexCIYX9oZDCLhRS2B8KKexCIYX9oZDCLhRS2B8KKexCIYX9oZDCLhRS2F9glOqFcbxNVROXQq/X01Sm+qZ7ki8DetIH/ZFW+tVkRxQutrnoKt/V4hViq4vpTh02n6WVzzWMFumV7Fm/lKt+lkfNXa55PMb2WrR7vl7fq15/qsNe/9p67WtkopfFi8PLx8tcHXfuO1BmTOVQmHl89XBlRJXJ5L4kztRh/T4Hnbitoc/XR1+MwxpSGCYKKQwfhRSGj8KvUDj/SoXN5+zWJ2SnNcysn+iHzvrHdm7I7SgN6duTjXmPLCfQnL4fmvb+Rj8b6d2y/j1tuZ86FNbt/ZsRwjlMJ6OR5Q7JsUOh7azcUx1O4bKZYPsE2kruS2Lb/qNxOIVpWV6WB9brjcMalq+H+5flpgznidjxZwf9nkK7m3AKJzcntlgltxR+HgoppHB4FFJI4fAopJDC4VFIIYXDo5BCCodHIYUUDo9CCikcHoUUUjg8Cr9mYeJ2pYJl2/ALT70UI/TCZoJ3qj9351iYxLcz+W7M2Tkepc0M5cJ8Zjuiwy+Md/Jtk7szLUznosx62dg5FKr7m/MsPPkXByj8TBR+iMLBUfghCgdH4YcoHNx/UPjWzOeAS6Htk3czxFtYhRanfrcI6J6Z1H6Uvqv7m631tFVIa2hdQof/u9Zx41Q4hdn+F6oOzy5d5Zk+wMwqnF9MWuyDWj/KlS/kAbK89QjtH6SwClvTcymc20/BhVMYfbf6zAEAAAAAAAAAAAAAAABC8BcfaY0kWHg/YgAAAABJRU5ErkJggg==" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        /* --- CUSTOM CURSOR FIX --- */
+
+        /* 1. Apply to the root and body */
+        html, body {
+            cursor: url('https://codehs.com/uploads/471381c796bfff3712cd05b64b44142a'), auto !important;
+            min-height: 100vh;
+        }
+
+        /* 2. Apply to all interactive elements */
+        /* We include 'a' tags, buttons, and tailwind-style pointer classes */
+        a, 
+        button, 
+        input, 
+        select, 
+        textarea, 
+        .cursor-pointer, 
+        #keystroke-tester-container div,
+        [role="button"] {
+            cursor: url('https://codehs.com/uploads/83f80767e459872bcd2a56d8cc903e59'), pointer !important;
+        }
+
+        /* 3. Special fix for iframes/modals */
+        #gameModal, .bg-gray-900-transparent {
+            cursor: url('https://codehs.com/uploads/471381c796bfff3712cd05b64b44142a'), auto !important;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Vt323&display=swap');
+
+        body {
+            background-color: #1a1a1a;
+            background-image: url('https://codehs.com/uploads/1916888640ecddc0e180707a596f259c');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Vt323', monospace;
+            color: white;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            text-shadow: 4px 4px 0px #000;
+            letter-spacing: 2px;
+            color: #ffffff;
+            z-index: 1;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+
+        .tab-btn {
+            background-color: #444;
+            border: 2px solid #000;
+            color: #fff;
+            padding: 5px 15px;
+            font-family: 'Vt323', monospace;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background-color: #ffffa0;
+            color: #000;
+            border-color: #fff;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 480px;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border: 2px solid #555;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .category-section {
+            display: none;
+        }
+
+        .category-section.active {
+            display: block;
+        }
+
+        .version-item {
+            margin-bottom: 20px;
+        }
+
+        .version-label {
+            font-size: 1.5rem;
+            color: #ffffa0;
+            text-shadow: 2px 2px #000;
+            margin-bottom: 8px;
+            text-align: center;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .mc-button {
+            background-color: #7d7d7d;
+            border: 2px solid #000;
+            border-top: 2px solid #a8a8a8;
+            border-left: 2px solid #a8a8a8;
+            border-bottom: 2px solid #555;
+            border-right: 2px solid #555;
+            color: #ffffff;
+            padding: 8px 0;
+            text-align: center;
+            text-decoration: none;
+            font-size: 1.3rem;
+            text-shadow: 2px 2px #000;
+            cursor: pointer;
+            flex: 1;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        .mc-button.download-btn {
+            background-color: #556b2f; /* Dark Olive Green for download */
+        }
+
+        .mc-button:hover {
+            background-color: #8c8c8c;
+            color: #ffffa0;
+        }
+
+        .mc-button.download-btn:hover {
+            background-color: #6b8e23;
+        }
+
+        #loader {
+            display: none;
+            position: fixed;
+            bottom: 50px;
+            font-size: 1.5rem;
+            color: #ffffa0;
+            text-shadow: 2px 2px 0 #000;
+            background: rgba(0,0,0,0.8);
+            padding: 10px 20px;
+            border: 2px solid #ffffa0;
+            z-index: 10;
+        }
+
+        .footer {
+            margin-top: 20px;
+            color: #ccc;
+            font-size: 1.2rem;
+            text-shadow: 2px 2px 0 #000;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>EAGLERCRAFT LAUNCHER</h1>
+
+    <div class="filter-tabs">
+        <button class="tab-btn active" onclick="showCategory('v1-8', event)">1.8.8</button>
+        <button class="tab-btn" onclick="showCategory('v1-12', event)">1.12.2</button>
+        <button class="tab-btn" onclick="showCategory('v-other', event)">Other</button>
+    </div>
+
+    <div class="container">
+        
+        <div id="v1-8" class="category-section active">
+            <div class="version-item">
+                <div class="version-label">Astra Client v2.1 (THE BEST)</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/eafd5a2fe8782cba5b64717bea243941')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('Astra_1.8.8', 'https://codehs.com/uploads/ad0f479bc22688c0f4b6270397971064')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+            <div class="version-item">
+                <div class="version-label">Resent Client 1.8.8</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/29474c332c0171b3ce2a7c50e86ea144')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('Resent_1.8.8', 'https://codehs.com/uploads/29474c332c0171b3ce2a7c50e86ea144')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+            <div class="version-item">
+                <div class="version-label">Pixel Client 1.8.8</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/682bfd0ce122a7840f350b3bd7e947ab')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('Pixel_1.8.8', 'https://codehs.com/uploads/682bfd0ce122a7840f350b3bd7e947ab')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+            <div class="version-item">
+                <div class="version-label">Default 1.8.8</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/ec71e0950b63a735a372fb3c15cce28a')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('Default_1.8.8', 'https://codehs.com/uploads/ec71e0950b63a735a372fb3c15cce28a')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="v1-12" class="category-section">
+            <div class="version-item">
+                <div class="version-label">Tuff Client 1.12.2</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/b14d657f18c5df2c7cd49c7bf36d5f0a')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('Tuff_1.12.2', 'https://codehs.com/uploads/b14d657f18c5df2c7cd49c7bf36d5f0a')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+            <div class="version-item">
+                <div class="version-label">Default 1.12.2</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/8b5a8b3b5409a2c59a8b70a3655043fb')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('Default_1.12.2', 'https://codehs.com/uploads/8b5a8b3b5409a2c59a8b70a3655043fb')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="v-other" class="category-section">
+            <div class="version-item">
+                <div class="version-label">Z Client 1.11</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/f058c2a6813b144f122e17aa1adbd3fa')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('Z_Client_1.11', 'https://codehs.com/uploads/f058c2a6813b144f122e17aa1adbd3fa')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+            <div class="version-item">
+                <div class="version-label">Starlike Client 0.4.2</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/c7602f1789bc64b4ef4a928cea0a4a40')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('Starlike_0.4.2', 'https://codehs.com/uploads/c7602f1789bc64b4ef4a928cea0a4a40')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+            <div class="version-item">
+                <div class="version-label">WinstonHorror</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/20d5e7feac06d7dba95416e6ebfea1db')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('WinstonHorror', 'https://codehs.com/uploads/20d5e7feac06d7dba95416e6ebfea1db')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+            <div class="version-item">
+                <div class="version-label">Eagler Alpha 0.30</div>
+                <div class="button-group">
+                    <div onclick="playOnline('https://codehs.com/uploads/997150227faba15868b0c4104533df04')" class="mc-button">Play</div>
+                    <div onclick="downloadGame('Eagler_Alpha_0.30', 'https://codehs.com/uploads/997150227faba15868b0c4104533df04')" class="mc-button download-btn">Download</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="loader">Processing... Please wait.</div>
+
+    <div class="footer">
+        Select a version to begin
+    </div>
+
+    <script>
+        function showCategory(catId, event) {
+            document.querySelectorAll('.category-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(catId).classList.add('active');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+        }
+
+        async function fetchZip(url) {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+            return await response.blob();
+        }
+
+        async function playOnline(zipUrl) {
+            const loader = document.getElementById('loader');
+            loader.innerHTML = "Downloading & Extracting... Please wait.";
+            loader.style.display = "block";
+
+            try {
+                const blob = await fetchZip(zipUrl);
+                const zip = await JSZip.loadAsync(blob);
+
+                let htmlFile = null;
+                zip.forEach((relativePath, file) => {
+                    if (relativePath.endsWith('.html')) {
+                        htmlFile = file;
+                    }
+                });
+
+                if (htmlFile) {
+                    const buffer = await htmlFile.async('arraybuffer');
+                    const htmlBlob = new Blob([buffer], { type: 'text/html' });
+                    const fileUrl = URL.createObjectURL(htmlBlob);
+                    window.location.href = fileUrl;
+                } else {
+                    alert("Error: No HTML file found inside the ZIP!");
+                    loader.style.display = "none";
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Could not load automatically (CORS or file issue).");
+                loader.style.display = "none";
+            }
+        }
+
+        async function downloadGame(name, zipUrl) {
+            const loader = document.getElementById('loader');
+            loader.innerHTML = "Preparing download...";
+            loader.style.display = "block";
+
+            try {
+                const blob = await fetchZip(zipUrl);
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${name}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                loader.style.display = "none";
+            } catch (error) {
+                console.error(error);
+                alert("Download failed.");
+                loader.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

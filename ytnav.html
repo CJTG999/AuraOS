@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Viewer</title>
+    
+    <link id="dynamic-favicon" rel="icon" href="https://codehs.com/uploads/faad0eecf875d65cad75eff7e3dcd87b">
+
+    <style>
+        /* CSS: Modern Liquid Glass Theme */
+        :root {
+            --bg-color: #0b0c10;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-panel: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --text-color: #f0f0f0;
+            --accent-color: #ff2a5f;
+            --accent-hover: #e01e4f;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Ambient Fluid Background Spheres */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .liquid-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: float 18s infinite alternate ease-in-out;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, #ff0050, #7928ca);
+            top: -100px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #0070f3, #00dfd8);
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, #f50057, #ff8a00);
+            top: 40%;
+            left: 30%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(60px, 80px) scale(1.1); }
+            100% { transform: translate(-40px, 40px) scale(0.9); }
+        }
+
+        /* Header Glass Styling */
+        header {
+            width: 100%;
+            padding: 18px 24px;
+            text-align: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        h1 { 
+            margin: 0; 
+            font-weight: 400; 
+            letter-spacing: 1px; 
+            font-size: 1.5rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* Disguise Button */
+        .settings-btn {
+            position: absolute;
+            right: 20px;
+            background: var(--glass-panel);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+        .settings-btn:hover { 
+            background: rgba(255, 255, 255, 0.2); 
+            transform: translateY(-2px);
+        }
+
+        /* Disguise Panel Liquid Glass */
+        .disguise-panel {
+            display: none;
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            width: 300px; 
+            background: rgba(20, 20, 25, 0.75);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            z-index: 200;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .disguise-panel h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: #fff; font-weight: 500; }
+        .disguise-panel label { font-size: 0.8rem; color: #bbb; margin-top: 4px; display: block; }
+        .disguise-panel .divider { text-align: center; color: #888; font-size: 0.75rem; margin: 4px 0; }
+        
+        .disguise-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            color: white;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .disguise-input:focus {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #ff2a5f, #d60043);
+            margin-top: 8px;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .save-btn:hover { opacity: 0.9; }
+
+        /* Preset Buttons with Favicon Icon Styling */
+        .preset-btn {
+            width: 100%;
+            background: rgba(0, 123, 131, 0.4);
+            backdrop-filter: blur(5px);
+            color: white;
+            border: 1px solid rgba(0, 200, 200, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .preset-btn:hover { background: rgba(0, 123, 131, 0.7); }
+
+        .preset-icon {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
+
+        .preset-btn.apple-music {
+            background: rgba(250, 36, 60, 0.35);
+            border-color: rgba(250, 36, 60, 0.5);
+        }
+        .preset-btn.apple-music:hover { background: rgba(250, 36, 60, 0.75); }
+        
+        .reset-btn {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--glass-border);
+            color: #ccc;
+            padding: 8px;
+            border-radius: 8px;
+            margin-top: 5px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .reset-btn:hover { background: rgba(255, 255, 255, 0.15); }
+
+        /* Controls & Search Bar */
+        .controls {
+            margin: 30px 0 20px 0;
+            display: flex;
+            gap: 12px;
+            width: 90%;
+            max-width: 800px;
+            background: var(--glass-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 8px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(0, 0, 0, 0.25);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]::placeholder { color: #888; }
+
+        .controls button {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, var(--accent-color), #ff527b);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(255, 42, 95, 0.3);
+            transition: all 0.2s;
+        }
+
+        .controls button:hover { 
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(255, 42, 95, 0.5);
+        }
+
+        /* Main Video Player Glass Wrapper */
+        .video-container {
+            width: 90%;
+            max-width: 1280px;
+            aspect-ratio: 16 / 9;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            margin-bottom: 30px;
+            display: none; 
+        }
+
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* Search Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 24px;
+            width: 90%;
+            max-width: 1280px;
+            padding-bottom: 50px;
+        }
+
+        .video-card {
+            background: var(--glass-panel);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .video-card:hover { 
+            transform: translateY(-8px) scale(1.02); 
+            border-color: rgba(255, 255, 255, 0.35);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .info { padding: 14px; }
+        .title { font-weight: 600; font-size: 0.95rem; margin-bottom: 6px; line-height: 1.3; color: #fff; }
+        .author { color: #aaa; font-size: 0.82rem; }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Liquid Orbs for Glass Effect -->
+    <div class="ambient-bg">
+        <div class="liquid-orb orb-1"></div>
+        <div class="liquid-orb orb-2"></div>
+        <div class="liquid-orb orb-3"></div>
+    </div>
+
+    <header>
+        <h1>YouTube Viewer</h1>
+        <button class="settings-btn" onclick="toggleSettings()">Disguise</button>
+        
+        <div id="disguisePanel" class="disguise-panel">
+            <h3>Disguise Tab</h3>
+            
+            <button class="preset-btn" onclick="applyClassroomPreset()">
+                <img src="https://ssl.gstatic.com/classroom/favicon.png" class="preset-icon" alt="icon">
+                Google Classroom Mode
+            </button>
+            <button class="preset-btn apple-music" onclick="applyAppleMusicPreset()">
+                <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/apple-music/default.svg" class="preset-icon" alt="icon">
+                Apple Music Mode
+            </button>
+
+            <div class="divider">--- OR CUSTOM ---</div>
+
+            <label>Tab Title:</label>
+            <input type="text" id="tabTitleInput" class="disguise-input" placeholder="e.g. Google Docs">
+            
+            <label>Option 1: Paste Image Link</label>
+            <input type="text" id="tabIconUrlInput" class="disguise-input" placeholder="https://...">
+
+            <label>Option 2: Upload Image</label>
+            <input type="file" id="tabIconInput" accept="image/png, image/jpeg" class="disguise-input">
+            
+            <button class="save-btn" onclick="saveDisguise()">Save Custom Disguise</button>
+            <button class="reset-btn" onclick="resetDisguise()">Reset to Default</button>
+        </div>
+    </header>
+
+    <div class="controls">
+        <input type="text" id="searchInput" placeholder="Paste URL or Type to Search...">
+        <button onclick="handleInput()">Go</button>
+    </div>
+
+    <div class="video-container" id="videoContainer">
+        <iframe id="youtubeFrame" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+    </div>
+
+    <div id="results" class="results-grid"></div>
+
+    <script>
+        // --- DISGUISER LOGIC ---
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedTitle = localStorage.getItem("disguiseTitle");
+            const savedIcon = localStorage.getItem("disguiseIcon");
+
+            if (savedTitle) document.title = savedTitle;
+            if (savedIcon) document.getElementById("dynamic-favicon").href = savedIcon;
+        });
+
+        function toggleSettings() {
+            const panel = document.getElementById("disguisePanel");
+            panel.style.display = panel.style.display === "flex" ? "none" : "flex";
+        }
+
+        // --- PRESET FUNCTIONS ---
+        function applyClassroomPreset() {
+            const presetTitle = "Home - Classroom";
+            const presetIcon = "https://ssl.gstatic.com/classroom/favicon.png";
+
+            document.title = presetTitle;
+            localStorage.setItem("disguiseTitle", presetTitle);
+            applyIcon(presetIcon);
+        }
+
+        function applyAppleMusicPreset() {
+            const presetTitle = "My Music (please don't close)";
+            const presetIcon = "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/apple-music/default.svg";
+
+            document.title = presetTitle;
+            localStorage.setItem("disguiseTitle", presetTitle);
+            applyIcon(presetIcon);
+        }
+        // ---------------------------
+
+        function saveDisguise() {
+            const titleInput = document.getElementById("tabTitleInput").value;
+            const iconUrlInput = document.getElementById("tabIconUrlInput").value;
+            const iconFileInput = document.getElementById("tabIconInput").files[0];
+
+            // 1. Save Title
+            if (titleInput) {
+                document.title = titleInput;
+                localStorage.setItem("disguiseTitle", titleInput);
+            }
+
+            // 2. Save Icon (Prioritize Upload over URL)
+            if (iconFileInput) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    applyIcon(e.target.result);
+                };
+                reader.readAsDataURL(iconFileInput);
+            } else if (iconUrlInput) {
+                applyIcon(iconUrlInput);
+            } else {
+                if (titleInput) {
+                    alert("Title Saved!");
+                    toggleSettings();
+                }
+            }
+        }
+
+        function applyIcon(iconSource) {
+            document.getElementById("dynamic-favicon").href = iconSource;
+            localStorage.setItem("disguiseIcon", iconSource);
+            // Small delay so user sees button click before alert
+            setTimeout(() => {
+                alert("Disguise Active!");
+                toggleSettings(); // Close panel
+            }, 100);
+        }
+
+        function resetDisguise() {
+            localStorage.removeItem("disguiseTitle");
+            localStorage.removeItem("disguiseIcon");
+            location.reload(); 
+        }
+
+        // --- END DISGUISER LOGIC ---
+
+
+        // Use a public Invidious instance for search data
+        const API_DOMAIN = 'https://inv.tux.pizza'; 
+
+        window.onload = function() {
+            // Re-apply disguise on full window load just in case
+            const savedTitle = localStorage.getItem("disguiseTitle");
+            if (savedTitle) document.title = savedTitle;
+
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('v')) {
+                loadPlayer(params.get('v'));
+            }
+        };
+
+        function handleInput() {
+            const input = document.getElementById('searchInput').value;
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = input.match(regExp);
+
+            if (match && match[2].length === 11) {
+                loadPlayer(match[2]);
+            } else {
+                searchYouTube(input);
+            }
+        }
+
+        function loadPlayer(videoId) {
+            const container = document.getElementById('videoContainer');
+            const frame = document.getElementById('youtubeFrame');
+            
+            frame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+            container.style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?v=' + videoId;
+            window.history.pushState({path: newUrl}, '', newUrl);
+        }
+
+        async function searchYouTube(query) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p style="text-align:center; width:100%; color:#aaa;">Searching...</p>';
+            
+            try {
+                const response = await fetch(`${API_DOMAIN}/api/v1/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                resultsDiv.innerHTML = ''; 
+
+                data.forEach(item => {
+                    if (item.type === 'video') {
+                        const card = document.createElement('div');
+                        card.className = 'video-card';
+                        card.onclick = () => loadPlayer(item.videoId);
+                        
+                        card.innerHTML = `
+                            <img class="thumbnail" src="${item.videoThumbnails[0].url}" alt="thumb">
+                            <div class="info">
+                                <div class="title">${item.title}</div>
+                                <div class="author">${item.author}</div>
+                            </div>
+                        `;
+                        resultsDiv.appendChild(card);
+                    }
+                });
+
+                if(data.length === 0) {
+                    resultsDiv.innerHTML = '<p style="text-align:center; width:100%;">No results found.</p>';
+                }
+
+            } catch (error) {
+                console.error(error);
+                resultsDiv.innerHTML = '<p style="text-align:center; width:100%;">Search Error. The public API might be busy. Try again or paste a direct link.</p>';
+            }
+        }
+
+        document.getElementById("searchInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") handleInput();
+        });
+    </script>
+</body>
+</html>
